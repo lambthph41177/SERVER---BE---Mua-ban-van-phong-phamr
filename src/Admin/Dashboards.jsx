@@ -207,7 +207,74 @@ console.log(mappedData);
           </div>
         </div>
       </div>
-
+  <div className="row">
+        <div className="col-xl-12">
+          <div className="card">
+            <div className="card-header align-items-center d-flex">
+              <h4 className="card-title mb-0 flex-grow-1">
+                Sản phẩm bán chạy nhất
+              </h4>
+            </div>
+            <div className="card-body">
+              <div className="table-responsive table-card">
+                <table className="table table-hover table-centered align-middle table-nowrap mb-0">
+                  <tbody>
+                    {mappedData.topSellingProducts.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <div className="avatar-sm  bg-light rounded p-1 me-2">
+                              <img
+                                src={item.product_image}
+                                alt=""
+                                className="img-fluid d-block max-h-14"
+                              />
+                            </div>
+                            <div>
+                              <h5 className="fs-14 my-1">
+                                <Link
+                                  to={`product_detail/${item.id}`}
+                                  className="text-reset"
+                                >
+                                  {item?.product_name?.length > 20
+                                    ? item?.product_name?.slice(0, 20) + "..."
+                                    : item?.product_name}
+                                </Link>
+                              </h5>
+                              <div>{item.color}</div>
+                              <span className="text-muted">
+                                {item.last_order_date}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <h5 className="fs-14 my-1 fw-normal">
+                            <FormatPrice price={item.price} />
+                          </h5>
+                          <span className="text-muted">Giá</span>
+                        </td>
+                        <td>
+                          <h5 className="fs-14 my-1 fw-normal">
+                            {item.total_orders}
+                          </h5>
+                          <span className="text-muted">Số lượng </span>
+                        </td>
+                        <td>
+                          <h5 className="fs-14 my-1 fw-normal">
+                            <FormatPrice price={item.total_amount} />
+                          </h5>
+                          <span className="text-muted">Tổng tiền</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
      
 
 
