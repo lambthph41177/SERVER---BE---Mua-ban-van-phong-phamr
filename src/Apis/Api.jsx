@@ -18,7 +18,7 @@ export const getCategories = async () => {
 
 export const deleteCategory = async (id) => {
   const res = await Axios.delete(`category/${id}`);
-  return res.data;
+  return res.data
 };
 export const updateCategory = async (id, data) => {
   const res = await Axios.patch(`category/${id}`, data);
