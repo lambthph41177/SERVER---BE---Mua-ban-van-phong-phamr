@@ -27,7 +27,124 @@ const Dashboards = () => {
 
  
   
+<div className="row">
+        <div className="col-xl-3 col-md-6">
+          <div className="card card-animate">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-grow-1 overflow-hidden">
+                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                    Tổng doanh thu
+                  </p>
+                </div>
+              </div>
+              <div className="d-flex align-items-end justify-content-between mt-4">
+                <div>
+                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                    <span className="counter-value" data-target="559.25">
+                      <FormatPrice price={mappedData.totalRevenue} />
+                    </span>
+                  </h4>
+                </div>
+                <div className="avatar-sm flex-shrink-0">
+                  <span className="avatar-title bg-success-subtle rounded fs-3">
+                    <i className="bx bx-dollar-circle text-success" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
+        <div className="col-xl-3 col-md-6">
+          <div className="card card-animate">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-grow-1 overflow-hidden">
+                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                    Tổng số đơn hàng
+                  </p>
+                </div>
+              </div>
+              <div className="d-flex align-items-end justify-content-between mt-4">
+                <div>
+                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                    <span className="counter-value">
+                      {mappedData.ordersCount}
+                    </span>
+                  </h4>
+                </div>
+                <div className="avatar-sm flex-shrink-0">
+                  <span className="avatar-title bg-info-subtle rounded fs-3">
+                    <i className="bx bx-shopping-bag text-info" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-xl-3 col-md-6">
+          <div className="card card-animate">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-grow-1 overflow-hidden">
+                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                    Tổng người dùng
+                  </p>
+                </div>
+              </div>
+              <div className="d-flex align-items-end justify-content-between mt-4">
+                <div>
+                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                    <span className="counter-value" data-target="183.35">
+                      {mappedData.usersCount}
+                    </span>
+                  </h4>
+                </div>
+                <div className="avatar-sm flex-shrink-0">
+                  <span className="avatar-title bg-warning-subtle rounded fs-3">
+                    <i className="bx bx-user-circle text-warning" />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-xl-3 col-md-6">
+          <div className="card card-animate">
+            <div className="card-body">
+              <div className="d-flex align-items-center">
+                <div className="flex-grow-1 overflow-hidden">
+                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                    Tổng số sản phẩm
+                  </p>
+                </div>
+              </div>
+              <div className="d-flex align-items-end justify-content-between mt-4">
+                <div>
+                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                    <span className="counter-value">
+                      {mappedData.productCount}
+                    </span>
+                  </h4>
+                </div>
+                <div className="avatar-sm flex-shrink-0">
+                  <span className="avatar-title bg-primary-subtle rounded fs-3">
+                    <img
+                      src="https://media-public.canva.com/FlQVA/MAFTeAFlQVA/1/tl.png"
+                      className="bx bx-wallet text-primary"
+                      width={30}
+                      alt=""
+                    />
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 console.log(mappedData);
   return (
     <div className="">
