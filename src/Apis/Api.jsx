@@ -22,7 +22,7 @@ export const deleteCategory = async (id) => {
 };
 export const updateCategory = async (id, data) => {
   const res = await Axios.patch(`category/${id}`, data);
-  return res.data;
+  return res.data
 };
 
 export const addCategory = async (data) => {
