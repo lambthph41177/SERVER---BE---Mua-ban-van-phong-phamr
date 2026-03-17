@@ -12,6 +12,14 @@ function parseDate(dateStr) {
 }
 
 
+function formatDateToDDMMYYYY(dateStr) {
+  const d = parseDate(dateStr);
+  if (!d) return dateStr || "";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
 // function formatVND(value) {
 //   if (value === null || value === undefined || isNaN(value)) return "0 đ";
 //   return Number(value).toLocaleString("vi-VN") + " đ";
