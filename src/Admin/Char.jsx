@@ -75,13 +75,9 @@ const colorMap = {
   const series = [totalSeries, ...statusSeries];
 
   // colors aligned with series order
-  const colors = [
-    colorMap.total,
-    colorMap["Xác nhận"],
-    colorMap["Đang giao hàng"],
-    colorMap["Thành Công"],
-    colorMap["Hủy"],
-  ];
+const statusOrder = ["total", "Xác nhận", "Đang giao hàng", "Thành Công", "Hủy"];
+
+const colors = statusOrder.map((key) => colorMap[key]);
 
   // stroke widths & dash for each series (column first => stroke 0)
   const strokeWidths = [0, 3, 3, 3, 3];
