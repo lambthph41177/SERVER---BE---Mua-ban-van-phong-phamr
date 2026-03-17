@@ -29,10 +29,6 @@ export const addCategory = async (data) => {
   const res = await Axios.post(`category`, data);
  return res.data
 };
-export const DetailProduct = async (id) => {
-  const res = await Axios.get(`product/${id}`);
-  return res.data;
-};
 export const forceDeleteProduct = async (id) => {
   const res = await Axios.delete(`products/${id}`);
   return res.data;
@@ -42,6 +38,7 @@ export const updateProduct = async (id, data) => {
   const res = await Axios.patch(`products/${id}`, data);
   return res.data;
 };
+
 export const categoryProduct = async (id) => {
   const res = await Axios.get(`/products/category/${id}`);
   return res.data;
