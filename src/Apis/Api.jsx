@@ -27,7 +27,7 @@ export const updateCategory = async (id, data) => {
 
 export const addCategory = async (data) => {
   const res = await Axios.post(`category`, data);
-  return res.data;
+ return res.data
 };
 export const DetailProduct = async (id) => {
   const res = await Axios.get(`product/${id}`);
