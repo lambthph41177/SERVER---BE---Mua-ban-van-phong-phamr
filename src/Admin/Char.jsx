@@ -50,13 +50,18 @@ export function NumberOrder({ chart = {} }) {
   const statusKeys = ["Xác nhận", "Đang giao hàng", "Thành Công", "Hủy"];
 
   // Color palette (adjust as needed)
-const colorMap = {
-  total: "#DC2626", // đỏ trầm hơn, đỡ chói mắt
-  "Xác nhận": "#2563EB", // xanh dương đậm, nhìn tinh tế
-  "Đang giao hàng": "#D97706", // vàng cam vừa, không quá chói
-  "Thành Công": "#059669", // xanh lá đậm, dễ nhìn
-  Hủy: "#B91C1C", // đỏ đậm, khác hẳn total
+const STATUS_KEYS = ["total", "Xác nhận", "Đang giao hàng", "Thành Công", "Hủy"];
+
+const COLOR_PALETTE = {
+  total: "#DC2626",
+  "Xác nhận": "#2563EB",
+  "Đang giao hàng": "#D97706",
+  "Thành Công": "#059669",
+  Hủy: "#B91C1C",
 };
+
+// dùng lại
+const colors = STATUS_KEYS.map((key) => COLOR_PALETTE[key]);
 
 
   // Build series - put total (column) first so lines draw on top visually
