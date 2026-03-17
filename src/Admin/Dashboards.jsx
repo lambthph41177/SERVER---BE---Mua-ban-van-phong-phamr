@@ -275,6 +275,74 @@ console.log(mappedData);
           </div>
         </div>
       </div>
+       <div className="row">
+        <div className="col-xl-12">
+          <div className="card">
+            <div className="card-header align-items-center d-flex">
+              <h4 className="card-title mb-0 flex-grow-1">Đơn hàng gần đây</h4>
+            </div>
+            <div className="card-body">
+              <div className="table-responsive table-card">
+                <table className="table table-borderless table-centered align-middle table-nowrap mb-0">
+                  <thead className="text-muted table-light">
+                    <tr>
+                      <th scope="col">Mã đơn hàng</th>
+                      <th scope="col">Người mua</th>
+                      <th scope="col">Sản phẩm</th>
+                      <th scope="col">Màu sắc</th>
+                      <th scope="col">Giá tiền</th>
+                      <th scope="col">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mappedData.recentOrders.map((item, index) => (
+                      <tr key={index}>
+                        <td>
+                          <Link
+                            to={`order_detail/${item.id}`}
+                            className="fw-medium link-primary"
+                          >
+                            {item.order_code}
+                          </Link>
+                        </td>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <div className="flex-grow-1">{item.user}</div>
+                          </div>
+                        </td>
+                        <td>
+                          <span>
+                            {item.items[0]?.product_name?.length > 20
+                              ? `${item.items[0].product_name.slice(0, 20)}...`
+                              : item.items[0]?.product_name}
+                          </span>
+                        </td>
+                        <td>
+                          <span>
+                            {item.items[0]?.color?.length > 20
+                              ? `${item.items[0].color.slice(0, 20)}...`
+                              : item.items[0]?.color}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-red-500">
+                            <FormatPrice price={item.total_amount} />
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge bg-success-subtle text-success">
+                            {item.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
      
 
 
@@ -295,6 +363,7 @@ console.log(mappedData);
 
   
     </div>
+    
   );
 };
 
