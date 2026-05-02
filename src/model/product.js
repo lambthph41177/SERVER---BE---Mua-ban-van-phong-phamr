@@ -10,10 +10,22 @@ const productSchma = new mongoose.Schema(
       ref: "caterories",
       required: true,
     },
-
+    brand: {
+      type: String,
+      required: false,
+    },
+    origin: {
+      type: String,
+      required: false,
+    },
     price: {
       type: Number,
       required: true,
+    },
+    priceWholesale: {
+      type: Number,
+      required: false,
+      default: 0,
     },
     variants: {
       type: [
@@ -23,6 +35,7 @@ const productSchma = new mongoose.Schema(
             required: true,
           },
           price: { type: Number },
+          priceWholesale: { type: Number, default: 0 },
           quantity: { type: Number, required: true },
           status: {
             type: Boolean,
@@ -34,12 +47,13 @@ const productSchma = new mongoose.Schema(
     },
     imageUrl: {
       type: String,
-      required: true,
+      required: false,
+      default: "",
     },
     abumImage: {
       type: [String],
       default: [],
-      required: true,
+      required: false,
     },
     discount: {
       type: Number,
@@ -73,4 +87,4 @@ const productSchma = new mongoose.Schema(
     timestamps: true,
   }
 );
-export const Product = mongoose.model("products", productSchma);
+export const Product = mongoose.models.products || mongoose.model("products", productSchma);
