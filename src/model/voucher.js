@@ -13,6 +13,7 @@ const voucherSchema = new mongoose.Schema(
       required: true,
     },
     // --- Cấu hình giảm giá ---
+    
     discount: {
       type: Number, // Phần trăm giảm giá
       required: true,
@@ -23,7 +24,7 @@ const voucherSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    
+
     // --- Giới hạn & Trạng thái ---
     quantity: {
       type: Number,
