@@ -3,15 +3,12 @@ import { Order } from "../model/order";
 import { Product } from "../model/product";
 import { Voucher } from "../model/voucher";
 
+/**
+ * Các hàm tiện ích (Helpers)
+ */
 const normalizeOrdersPayload = (payload) => {
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-
-  if (Array.isArray(payload?.orders)) {
-    return payload.orders;
-  }
-
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.orders)) return payload.orders;
   return payload ? [payload] : [];
 };
 
@@ -25,9 +22,7 @@ const getNextOrderCode = async (session) => {
 };
 
 const calculateVoucherDiscount = (voucher, subtotal) => {
-  if (!voucher || subtotal <= 0) {
-    return 0;
-  }
+  if (!voucher || subtotal <= 0) return 0;
 
   const now = new Date();
   const isStarted = !voucher.startDate || new Date(voucher.startDate) <= now;
@@ -43,6 +38,9 @@ const calculateVoucherDiscount = (voucher, subtotal) => {
   return Math.min(rawDiscount, maxDiscount);
 };
 
+/**
+ * Logic xây dựng Document đơn hàng & Xử lý tồn kho
+ */
 const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => {
   const normalizedInput = {
     ...orderInput,
@@ -50,43 +48,31 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
     invoiceInfo: orderInput?.invoiceInfo || {},
   };
 
-  if (!normalizedInput.customerName?.trim()) {
-    throw new Error("Tên khách hàng không được để trống");
-  }
-
-  if (!normalizedInput.phone?.trim()) {
-    throw new Error("Số điện thoại không được để trống");
-  }
-
-  if (!normalizedInput.address?.trim()) {
-    throw new Error("Địa chỉ không được để trống");
-  }
-
+  // 1. Validate dữ liệu cơ bản
+  if (!normalizedInput.customerName?.trim()) throw new Error("Tên khách hàng trống");
+  if (!normalizedInput.phone?.trim()) throw new Error("Số điện thoại trống");
+  if (!normalizedInput.address?.trim()) throw new Error("Địa chỉ trống");
   if (!Array.isArray(normalizedInput.products) || normalizedInput.products.length === 0) {
     throw new Error("Danh sách sản phẩm không hợp lệ");
   }
 
+  // 2. Kiểm tra Voucher
   const voucher = normalizedInput.voucherId
     ? await Voucher.findById(normalizedInput.voucherId).session(session)
     : null;
 
-  if (normalizedInput.voucherId && !voucher) {
-    throw new Error("Không tìm thấy voucher");
-  }
+  if (normalizedInput.voucherId && !voucher) throw new Error("Không tìm thấy voucher");
 
+  // 3. Xử lý từng sản phẩm
   let subtotal = 0;
   const products = [];
 
   for (const item of normalizedInput.products) {
     const product = await Product.findById(item.productId).session(session);
-
-    if (!product || product.status !== true) {
-      throw new Error("Không tìm thấy sản phẩm");
-    }
+    if (!product || product.status !== true) throw new Error("Không tìm thấy sản phẩm");
 
     const variant = product.variants.find(
-      (variantItem) =>
-        variantItem.color === item.color && variantItem.status === true
+      (v) => v.color === item.color && v.status === true
     );
 
     if (!variant) {
@@ -95,55 +81,38 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
 
     const quantity = Number(item.quantity || 0);
     if (!Number.isInteger(quantity) || quantity <= 0) {
-      throw new Error(`Số lượng của sản phẩm ${product.name} không hợp lệ`);
+      throw new Error(`Số lượng ${product.name} không hợp lệ`);
     }
 
     if (variant.quantity < quantity) {
       throw new Error(`Sản phẩm ${product.name} - màu ${item.color} không đủ số lượng`);
     }
 
-    const isWholesaleCustomer = normalizedInput.customerType === "wholesale";
-    const wholesalePrice = Number(
-      variant?.priceWholesale ?? product?.priceWholesale ?? 0
-    );
+    // Tính giá (Sỉ/Lẻ)
+    const isWholesale = normalizedInput.customerType === "wholesale";
+    const wholesalePrice = Number(variant?.priceWholesale ?? product?.priceWholesale ?? 0);
     const retailPrice = Number(variant?.price ?? product?.price ?? 0);
 
-    if (isWholesaleCustomer && wholesalePrice <= 0) {
+    if (isWholesale && wholesalePrice <= 0) {
       throw new Error(`Sản phẩm ${product.name} chưa có giá sỉ`);
     }
 
-    const priceBeforeDis = isWholesaleCustomer ? wholesalePrice : retailPrice;
+    const priceBeforeDis = isWholesale ? wholesalePrice : retailPrice;
     const productDiscount = Math.max(0, Number(product.discount || 0));
-    const priceAfterDis = Math.max(
-      0,
-      Math.round(priceBeforeDis * (1 - productDiscount / 100))
-    );
+    const priceAfterDis = Math.round(priceBeforeDis * (1 - productDiscount / 100));
 
+    // Cập nhật kho (Trừ số lượng biến thể)
     await Product.updateOne(
-      {
-        _id: item.productId,
-        "variants._id": variant._id,
-      },
-      {
-        $inc: {
-          "variants.$.quantity": -quantity,
-        },
-      },
+      { _id: item.productId, "variants._id": variant._id },
+      { $inc: { "variants.$.quantity": -quantity } },
       { session }
     );
 
+    // Tính lại tổng kho của Product
     const refreshedProduct = await Product.findById(item.productId).session(session);
     if (refreshedProduct) {
-      const totalQuantity = refreshedProduct.variants.reduce(
-        (sum, variantItem) => sum + Number(variantItem.quantity || 0),
-        0
-      );
-
-      await Product.updateOne(
-        { _id: item.productId },
-        { quantity: totalQuantity },
-        { session }
-      );
+      const totalQty = refreshedProduct.variants.reduce((sum, v) => sum + (v.quantity || 0), 0);
+      await Product.updateOne({ _id: item.productId }, { quantity: totalQty }, { session });
     }
 
     subtotal += priceAfterDis * quantity;
@@ -157,35 +126,25 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
     });
   }
 
+  // 4. Tính toán tổng tiền & Hóa đơn
   const voucherDiscount = calculateVoucherDiscount(voucher, subtotal);
   const totalPrice = Math.max(0, subtotal - voucherDiscount);
   const invoiceRequested = Boolean(normalizedInput.invoiceRequested);
 
   if (invoiceRequested) {
-    if (!normalizedInput.invoiceInfo?.companyName?.trim()) {
-      throw new Error("Vui lòng nhập tên công ty để xuất hóa đơn");
-    }
-
-    if (!normalizedInput.invoiceInfo?.taxCode?.trim()) {
-      throw new Error("Vui lòng nhập mã số thuế để xuất hóa đơn");
-    }
-
-    if (!normalizedInput.invoiceInfo?.invoiceAddress?.trim()) {
-      throw new Error("Vui lòng nhập địa chỉ xuất hóa đơn");
+    const info = normalizedInput.invoiceInfo;
+    if (!info?.companyName?.trim() || !info?.taxCode?.trim() || !info?.invoiceAddress?.trim()) {
+      throw new Error("Vui lòng nhập đầy đủ thông tin xuất hóa đơn");
     }
   }
 
   const normalizedUserId = normalizedInput.userId || (actor?.role === "user" ? actor.id : null);
-  const orderSource =
-    actor?.role === "admin" || actor?.role === "manage"
-      ? "manual_entry"
-      : "customer_self_service";
+  const orderSource = ["admin", "manage"].includes(actor?.role)
+    ? "manual_entry"
+    : "customer_self_service";
 
   return {
-    madh:
-      Number.isFinite(Number(normalizedInput.madh)) && Number(normalizedInput.madh) > 0
-        ? Number(normalizedInput.madh)
-        : nextOrderCode,
+    madh: Number(normalizedInput.madh) > 0 ? Number(normalizedInput.madh) : nextOrderCode,
     customerName: normalizedInput.customerName.trim(),
     phone: normalizedInput.phone.trim(),
     address: normalizedInput.address.trim(),
@@ -200,8 +159,6 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
     voucherId: normalizedInput.voucherId,
     note: normalizedInput.note || "",
     isPaymentSucces: Boolean(normalizedInput.isPaymentSucces),
-    cancelReason: normalizedInput.cancelReason || "",
-    handledBy: normalizedInput.handledBy || null,
     invoiceRequested,
     invoiceInfo: {
       companyName: normalizedInput.invoiceInfo?.companyName?.trim() || "",
@@ -213,70 +170,36 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
   };
 };
 
+/**
+ * Controllers
+ */
+
 export const GetOrder = async (req, res) => {
   try {
-    const {
-      search = "",
-      status = "",
-      payment = "",
-      source = "",
-    } = req.query;
-
-    // Tạo query filter
+    const { search = "", status = "", payment = "", source = "" } = req.query;
     const filter = {};
 
-    // Tìm kiếm theo mã đơn hàng / tên khách
     if (search) {
       const regex = new RegExp(search, "i");
       const searchAsNumber = Number(search);
       filter.$or = [
-        ...(Number.isNaN(searchAsNumber) ? [] : [{ madh: searchAsNumber }]),
-        { customerName: regex }, // tên người mua
+        ...(isNaN(searchAsNumber) ? [] : [{ madh: searchAsNumber }]),
+        { customerName: regex },
         { phone: regex },
         { email: regex },
         { "invoiceInfo.companyName": regex },
-        { "invoiceInfo.taxCode": regex },
       ];
     }
 
-    // Lọc theo trạng thái
-    if (status) {
-      filter.status = status;
-    }
+    if (status) filter.status = status;
+    if (payment) filter.payment = payment;
+    if (source) filter.orderSource = source;
 
-    // Lọc theo phương thức thanh toán
-    if (payment) {
-      filter.payment = payment;
-    }
+    const data = await Order.find(filter)
+      .populate("products.productId", "imageUrl")
+      .sort({ createdAt: -1 });
 
-    if (source) {
-      filter.orderSource = source;
-    }
-
-    // Lấy dữ liệu với filter và phân trang
-    const [data] = await Promise.all([
-      Order.find(filter)
-        .populate("products.productId", "imageUrl")
-        .sort({ createdAt: -1 }),
-      Order.countDocuments(filter),
-    ]);
-
-    return res.status(200).json({
-      data,
-    });
-  } catch (error) {
-    console.error("GetOrder error:", error);
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-export const GetOrderByUser = async (req, res) => {
-  try {
-    const data = await Order.find({ userId: req.params.userid }).populate(
-      "products.productId",
-      " imageUrl"
-    );
-    return res.status(200).json(data);
+    return res.status(200).json({ data });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -285,157 +208,107 @@ export const GetOrderByUser = async (req, res) => {
 export const AddOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
   try {
     const orderInputs = normalizeOrdersPayload(req.body);
-
-    if (orderInputs.length === 0) {
-      throw new Error("Dữ liệu đơn hàng không hợp lệ");
-    }
+    if (orderInputs.length === 0) throw new Error("Dữ liệu trống");
 
     let nextOrderCode = await getNextOrderCode(session);
     const preparedOrders = [];
 
-    for (const orderInput of orderInputs) {
-      const preparedOrder = await buildOrderDocument(
-        orderInput,
-        session,
-        nextOrderCode,
-        req.user
-      );
-
-      nextOrderCode = Number(preparedOrder.madh) + 1;
-      preparedOrders.push(preparedOrder);
+    for (const input of orderInputs) {
+      const order = await buildOrderDocument(input, session, nextOrderCode, req.user);
+      nextOrderCode = Number(order.madh) + 1;
+      preparedOrders.push(order);
     }
 
     const createdOrders = await Order.create(preparedOrders, { session });
-
     await session.commitTransaction();
-    session.endSession();
 
     return res.status(201).json({
-      message:
-        createdOrders.length > 1
-          ? `Tạo thành công ${createdOrders.length} đơn hàng`
-          : "Tạo đơn hàng thành công",
-      count: createdOrders.length,
+      message: createdOrders.length > 1 ? `Tạo ${createdOrders.length} đơn thành công` : "Thành công",
       data: createdOrders,
     });
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
     return res.status(400).json({ message: error.message });
+  } finally {
+    session.endSession();
   }
 };
-
 
 export const UpdateOrder = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
-
   try {
     const { id } = req.params;
     const newStatus = req.body.status;
-
-    // 1️⃣ Lấy order cũ
     const oldOrder = await Order.findById(id).session(session);
 
-    if (!oldOrder) {
-      throw new Error("Không tìm thấy đơn hàng");
-    }
+    if (!oldOrder) throw new Error("Không tìm thấy đơn hàng");
 
-    // 2️⃣ Nếu chuyển sang HỦY → hoàn kho
+    // Xử lý hoàn kho khi Hủy
     if (newStatus === "Hủy" && oldOrder.status !== "Hủy") {
       for (const item of oldOrder.products) {
-        // 2.1️⃣ Hoàn lại quantity cho đúng variant
         await Product.updateOne(
           { _id: item.productId },
+          { $inc: { "variants.$[v].quantity": item.quantity } },
           {
-            $inc: {
-              "variants.$[v].quantity": item.quantity,
-            },
-          },
-          {
-            arrayFilters: [
-              {
-                "v.color": item.color,
-                "v.status": true,
-              },
-            ],
+            arrayFilters: [{ "v.color": item.color, "v.status": true }],
             session,
           }
         );
 
-        // 2.2️⃣ Lấy lại product để tính quantity tổng
-        const product = await Product.findById(item.productId).session(session);
-
-        if (!product) continue;
-
-        const totalQuantity = product.variants.reduce(
-          (sum, v) => sum + v.quantity,
-          0
-        );
-
-        // 2.3️⃣ Update quantity tổng
-        await Product.updateOne(
-          { _id: item.productId },
-          { quantity: totalQuantity },
-          { session }
-        );
+        const prod = await Product.findById(item.productId).session(session);
+        if (prod) {
+          const totalQty = prod.variants.reduce((sum, v) => sum + v.quantity, 0);
+          await Product.updateOne({ _id: item.productId }, { quantity: totalQty }, { session });
+        }
       }
     }
 
-    // 3️⃣ Update order
-    const updatedOrder = await Order.findByIdAndUpdate(id, req.body, {
+    const updated = await Order.findByIdAndUpdate(id, req.body, {
       new: true,
       runValidators: true,
       session,
     });
 
     await session.commitTransaction();
-    session.endSession();
-
-    return res.status(200).json(updatedOrder);
+    return res.status(200).json(updated);
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
-
     return res.status(400).json({ message: error.message });
+  } finally {
+    session.endSession();
+  }
+};
+
+export const DetailOrder = async (req, res) => {
+  try {
+    const data = await Order.findById(req.params.id)
+      .populate("products.productId", "imageUrl")
+      .populate("handledBy", "username")
+      .populate("voucherId", "code discount type");
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+export const GetOrderByUser = async (req, res) => {
+  try {
+    const data = await Order.find({ userId: req.params.userid })
+      .populate("products.productId", "imageUrl")
+      .sort({ createdAt: -1 });
+    return res.status(200).json(data);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
 export const DeleteOrder = async (req, res) => {
   try {
     const data = await Order.deleteMany({});
-    return res.status(200).json({
-      message: "Đã xóa tất cả đơn hàng",
-      result: data,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-export const DetailOrder = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = await Order.findById(id)
-      .populate("products.productId", " imageUrl")
-      .populate("handledBy", "username")
-      .populate("voucherId", "code discount type");
-
-    return res.status(200).json(data);
-  } catch (error) {
-    return res.status(500).json({ message: error.message });
-  }
-};
-
-export const GetOrderByStatus = async (req, res) => {
-  try {
-    const data = await Order.find({ status: req.params.status })
-      .find({ userId: req.params.userid })
-      .populate("voucher", "discount")
-      .populate("products.productId", "name price imageUrl");
-    return res.status(200).json(data);
+    return res.status(200).json({ message: "Đã xóa tất cả", result: data });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
