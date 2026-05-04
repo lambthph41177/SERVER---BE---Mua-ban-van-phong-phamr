@@ -1,15 +1,11 @@
 import { Order } from "../model/order";
 import { Product } from "../model/product";
 
+// --- HELPERS (Các hàm hỗ trợ) ---
+
 const parseJsonField = (value, fallback) => {
-  if (value === undefined || value === null || value === "") {
-    return fallback;
-  }
-
-  if (Array.isArray(value) || typeof value === "object") {
-    return value;
-  }
-
+  if (value === undefined || value === null || value === "") return fallback;
+  if (Array.isArray(value) || typeof value === "object") return value;
   try {
     return JSON.parse(value);
   } catch {
@@ -18,14 +14,8 @@ const parseJsonField = (value, fallback) => {
 };
 
 const parseBooleanField = (value, fallback = true) => {
-  if (value === undefined || value === null || value === "") {
-    return fallback;
-  }
-
-  if (typeof value === "boolean") {
-    return value;
-  }
-
+  if (value === undefined || value === null || value === "") return fallback;
+  if (typeof value === "boolean") return value;
   return String(value).toLowerCase() === "true";
 };
 
@@ -34,6 +24,9 @@ const buildUploadedImageUrls = (req) =>
     (file) => `${req.protocol}://${req.get("host")}/uploads/products/${file.filename}`
   );
 
+/**
+ * Hàm xây dựng dữ liệu sản phẩm dùng chung cho Add và Update
+ */
 const buildProductPayload = ({ req, existingImages = [] }) => {
   const variants = parseJsonField(req.body.variants, []).map((item) => ({
     color: item?.color,
@@ -44,29 +37,27 @@ const buildProductPayload = ({ req, existingImages = [] }) => {
   }));
 
   const uploadedImages = buildUploadedImageUrls(req);
-  const abumImage = [...existingImages, ...uploadedImages].filter(Boolean);
+  const albumImage = [...existingImages, ...uploadedImages].filter(Boolean); // Đã sửa tên albumImage
 
   const totalQuantity = variants.length
     ? variants.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
     : Number(req.body.quantity || 0);
 
-  const productPrice = variants.length
-    ? Number(variants[0]?.price || 0)
-    : Number(req.body.price || 0);
+  const productPrice = variants.length ? Number(variants[0]?.price || 0) : Number(req.body.price || 0);
   const productPriceWholesale = variants.length
     ? Number(variants[0]?.priceWholesale || 0)
     : Number(req.body.priceWholesale || 0);
 
   return {
     name: req.body.name,
-    caterori: req.body.caterori,
+    category: req.body.category, // Đã sửa caterori thành category
     brand: req.body.brand || "",
     origin: req.body.origin || "",
     price: productPrice,
     priceWholesale: productPriceWholesale,
     variants,
-    imageUrl: abumImage[0] || "",
-    abumImage,
+    imageUrl: albumImage[0] || "",
+    albumImage,
     discount: Number(req.body.discount || 0),
     description: req.body.description,
     status: parseBooleanField(req.body.status, true),
@@ -74,37 +65,35 @@ const buildProductPayload = ({ req, existingImages = [] }) => {
   };
 };
 
-const GetAllProduct = async (req, res) => {
+// --- CONTROLLERS ---
+
+export const GetAllProduct = async (req, res) => {
   try {
-    // đếm tổng số sản phẩm
-    const total = await Product.countDocuments();
-
-    // lấy dữ liệu theo trang
     const data = await Product.find()
-      .populate("caterori", "name")
+      .populate("category", "name") // Đồng bộ category
       .populate("createdBy", "username")
-      .populate("createdBy", "username")
-      .sort({ createdAt: -1 }); // optional: sắp xếp mới nhất
+      .sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      data, // hoặc transformedData
-    });
+    return res.status(200).json({ data });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
 
-const Pagination = async (req, res) => {
+export const Pagination = async (req, res) => {
   try {
-    const page = req.query.page || req.params.page || 1;
-    const totalProduct = await Product.countDocuments();
-    const limit = req.query.limit || 12;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
     const skip = (page - 1) * limit;
-    const data = await Product.find().skip(skip).limit(limit).where("_id");
-    const toatalPages = Math.ceil(totalProduct / limit);
+
+    const [totalProduct, data] = await Promise.all([
+      Product.countDocuments(),
+      Product.find().skip(skip).limit(limit).sort({ createdAt: -1 }),
+    ]);
+
     return res.status(200).json({
       currentPage: page,
-      toatalPages,
+      totalPages: Math.ceil(totalProduct / limit),
       totalProduct,
       limit,
       data,
@@ -113,122 +102,103 @@ const Pagination = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-const GetProductDetails = async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id).populate(
-      "caterori",
-      "name"
-    );
 
-    // Check if the product exists
+export const GetProductDetails = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).populate("category", "name");
+
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
     }
+
     return res.status(200).json({
-      message: `Product found with ID: ${req.params.id}`,
+      message: "Tìm thấy sản phẩm",
       data: product,
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
 };
-const GetProductsCategory = async (req, res) => {
+
+export const GetProductsCategory = async (req, res) => {
   try {
     const { category } = req.params;
-    const products = await Product.find({ caterori: category });
+    const products = await Product.find({ category });
+
     if (products.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy sản phẩm nào trong danh mục này." });
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm nào trong danh mục này." });
     }
 
-    res.status(200).json(products); // Trả về danh sách sản phẩm
+    return res.status(200).json(products);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Lỗi server." });
+    return res.status(500).json({ message: "Lỗi server." });
   }
 };
-const AddProduct = async (req, res) => {
+
+export const AddProduct = async (req, res) => {
   try {
     const data = await Product.create({
       ...buildProductPayload({ req }),
-      createdBy: req.user.id, // Thêm ID của user tạo sản phẩm
+      createdBy: req.user.id,
     });
 
     return res.status(201).json({
-      message: "Thêm thành công",
+      message: "Thêm sản phẩm thành công",
       data,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return res.status(500).json({ message: error.message });
   }
 };
 
-const UpdateProduct = async (req, res) => {
+export const UpdateProduct = async (req, res) => {
   try {
     const currentProduct = await Product.findById(req.params.id);
 
     if (!currentProduct) {
-      return res.status(404).json({
-        message: "Product not found",
-      });
+      return res.status(404).json({ message: "Sản phẩm không tồn tại" });
     }
 
-    const existingImages = parseJsonField(
-      req.body.existingImages,
-      currentProduct.abumImage || []
-    );
+    const existingImages = parseJsonField(req.body.existingImages, currentProduct.albumImage || []);
 
     const data = await Product.findByIdAndUpdate(
       req.params.id,
       {
         ...buildProductPayload({ req, existingImages }),
-        updatedBy: req.user.id, // Thêm ID của user cập nhật sản phẩm
+        updatedBy: req.user.id,
       },
-      {
-        new: true,
-        runValidators: true,
-      }
+      { new: true, runValidators: true }
     );
 
     return res.status(200).json({
-      message: "Update success",
+      message: "Cập nhật thành công",
       data,
     });
   } catch (error) {
-    return res.status(500).json({
-      message: error.message,
-    });
+    return res.status(500).json({ message: error.message });
   }
 };
 
-const DeleteProduct = async (req, res) => {
+export const DeleteProduct = async (req, res) => {
   try {
     const productId = req.params.id;
 
-    // Kiểm tra xem sản phẩm có xuất hiện trong đơn hàng nào không
+    // Chặn xóa nếu sản phẩm đã có trong đơn hàng
     const ordersWithProduct = await Order.countDocuments({
       "products.productId": productId,
     });
 
-    // Nếu sản phẩm có trong bất kỳ đơn hàng nào => không cho xoá
     if (ordersWithProduct > 0) {
       return res.status(400).json({
         success: false,
-        message: `Không thể xóa sản phẩm vì đang tồn tại trong ${ordersWithProduct} đơn hàng`,
+        message: `Không thể xóa vì sản phẩm đang tồn tại trong ${ordersWithProduct} đơn hàng`,
       });
     }
 
-    // Nếu không có trong đơn hàng nào => cho phép xoá
     const deletedProduct = await Product.findByIdAndDelete(productId);
 
     if (!deletedProduct) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm để xóa",
-      });
+      return res.status(404).json({ success: false, message: "Sản phẩm không tồn tại" });
     }
 
     return res.status(200).json({
@@ -236,19 +206,6 @@ const DeleteProduct = async (req, res) => {
       message: "Xóa sản phẩm thành công",
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ success: false, message: error.message });
   }
-};
-
-export {
-  Pagination,
-  GetProductDetails,
-  GetAllProduct,
-  AddProduct,
-  UpdateProduct,
-  DeleteProduct,
-  GetProductsCategory,
 };
