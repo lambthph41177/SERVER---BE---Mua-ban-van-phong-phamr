@@ -33,6 +33,7 @@ const voucherSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    
     // --- Thời gian hiệu lực ---
     startDate: {
       type: Date,
