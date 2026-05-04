@@ -184,6 +184,7 @@ export const DeleteProduct = async (req, res) => {
     const productId = req.params.id;
 
     // Chặn xóa nếu sản phẩm đã có trong đơn hàng
+    
     const ordersWithProduct = await Order.countDocuments({
       "products.productId": productId,
     });
@@ -204,7 +205,7 @@ export const DeleteProduct = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Xóa sản phẩm thành công",
-      
+
     });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
