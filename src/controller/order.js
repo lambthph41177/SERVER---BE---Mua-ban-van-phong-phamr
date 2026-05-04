@@ -101,6 +101,7 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
     const productDiscount = Math.max(0, Number(product.discount || 0));
     const priceAfterDis = Math.round(priceBeforeDis * (1 - productDiscount / 100));
 
+    
     // Cập nhật kho (Trừ số lượng biến thể)
     await Product.updateOne(
       { _id: item.productId, "variants._id": variant._id },
@@ -108,7 +109,7 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
       { session }
     );
 
-    
+
     // Tính lại tổng kho của Product
     const refreshedProduct = await Product.findById(item.productId).session(session);
     if (refreshedProduct) {
