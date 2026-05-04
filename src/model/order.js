@@ -5,134 +5,123 @@ const orderSchema = new mongoose.Schema(
     madh: {
       type: Number,
       required: true,
+      unique: true, // Mã đơn hàng nên là duy nhất
     },
     customerName: {
       type: String,
       required: true,
-    },
-    totalPrice: {
-      type: Number,
-      required: false,
+      trim: true,
     },
     phone: {
       type: String,
       required: true,
+      trim: true,
     },
-
     address: {
       type: String,
       required: true,
     },
-
     email: {
       type: String,
       required: false,
       default: "",
+      lowercase: true,
     },
-
     customerType: {
       type: String,
       enum: ["retail", "wholesale"],
       default: "retail",
     },
-
     orderSource: {
       type: String,
       enum: ["customer_self_service", "manual_entry"],
       default: "customer_self_service",
     },
 
+    // --- Chi tiết sản phẩm trong đơn hàng ---
     products: [
       {
-        productId: { type: mongoose.Schema.Types.ObjectId, ref: "products" },
-        quantity: { type: Number, default: 1 },
-        priceBeforeDis: { type: Number, required: true },
-        priceAfterDis: { type: Number, required: true },
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "products",
+          required: true,
+        },
         name: { type: String, required: true },
         color: { type: String, required: true },
+        quantity: { type: Number, default: 1, min: 1 },
+        priceBeforeDis: { type: Number, required: true },
+        priceAfterDis: { type: Number, required: true },
       },
     ],
 
-    orderDate: {
-      type: Date,
-      default: Date.now,
+    // --- Thanh toán và Tổng tiền ---
+    totalPrice: {
+      type: Number,
+      required: true,
+      min: 0,
     },
-
-    status: {
-      type: String,
-      enum: ["Xác nhận", "Đang giao hàng", "Thành Công", "Hủy"],
-      default: "Xác nhận",
-    },
-
     payment: {
       type: String,
       enum: ["COD", "VNPAY", "MOMO", "GG PAY", "ZALO PAY"],
       default: "COD",
     },
-
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Users",
-      required: false,
-      default: null,
-    },
-
-    voucherId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "vouchers",
-      required: false,
-      default: null,
-      set: (v) => (v === "" ? null : v),
-    },
-
-    note: {
-      type: String,
-    },
-
-    isPaymentSucces: {
+    isPaymentSuccess: { // Đã sửa lỗi chính tả Success
       type: Boolean,
       default: false,
     },
+
+    // --- Trạng thái và Vận hành ---
+    status: {
+      type: String,
+      enum: ["Xác nhận", "Đang giao hàng", "Thành Công", "Hủy"],
+      default: "Xác nhận",
+    },
+    orderDate: {
+      type: Date,
+      default: Date.now,
+    },
     cancelReason: {
       type: String,
+      default: "",
+    },
+    note: {
+      type: String,
+      default: "",
+    },
+
+    // --- Liên kết ---
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Users",
+      default: null,
     },
     handledBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Users",
       default: null,
-      required: false,
+    },
+    voucherId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "vouchers",
+      default: null,
+      set: (v) => (v === "" ? null : v),
     },
 
+    // --- Thông tin hóa đơn (Invoice) ---
     invoiceRequested: {
       type: Boolean,
       default: false,
     },
-
     invoiceInfo: {
-      companyName: {
-        type: String,
-        default: "",
-      },
-      taxCode: {
-        type: String,
-        default: "",
-      },
-      invoiceEmail: {
-        type: String,
-        default: "",
-      },
-      invoiceAddress: {
-        type: String,
-        default: "",
-      },
-      note: {
-        type: String,
-        default: "",
-      },
+      companyName: { type: String, default: "" },
+      taxCode: { type: String, default: "" },
+      invoiceEmail: { type: String, default: "" },
+      invoiceAddress: { type: String, default: "" },
+      note: { type: String, default: "" },
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // Tự động tạo createdAt và updatedAt
   }
 );
 
