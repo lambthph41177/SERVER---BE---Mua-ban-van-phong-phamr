@@ -56,6 +56,7 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
     throw new Error("Danh sách sản phẩm không hợp lệ");
   }
 
+  
   // 2. Kiểm tra Voucher
   const voucher = normalizedInput.voucherId
     ? await Voucher.findById(normalizedInput.voucherId).session(session)
@@ -88,7 +89,7 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
       throw new Error(`Sản phẩm ${product.name} - màu ${item.color} không đủ số lượng`);
     }
 
-    
+
     // Tính giá (Sỉ/Lẻ)
     const isWholesale = normalizedInput.customerType === "wholesale";
     const wholesalePrice = Number(variant?.priceWholesale ?? product?.priceWholesale ?? 0);
