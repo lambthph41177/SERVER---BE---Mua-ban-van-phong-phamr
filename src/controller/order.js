@@ -108,6 +108,7 @@ const buildOrderDocument = async (orderInput, session, nextOrderCode, actor) => 
       { session }
     );
 
+    
     // Tính lại tổng kho của Product
     const refreshedProduct = await Product.findById(item.productId).session(session);
     if (refreshedProduct) {
