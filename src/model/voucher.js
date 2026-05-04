@@ -23,6 +23,7 @@ const voucherSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    
     // --- Giới hạn & Trạng thái ---
     quantity: {
       type: Number,
