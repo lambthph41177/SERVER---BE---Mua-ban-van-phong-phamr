@@ -17,6 +17,8 @@ import { ensureUploadDirs, uploadsRootDir } from "./utils/ensureUploadDirs.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
+
 const app = express();
 ensureUploadDirs();
 app.use(cors({
