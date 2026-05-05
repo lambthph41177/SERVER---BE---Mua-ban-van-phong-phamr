@@ -38,6 +38,7 @@ const orderSchema = new mongoose.Schema(
       default: "customer_self_service",
     },
     
+    
     // --- Chi tiết sản phẩm trong đơn hàng ---
     products: [
       {
