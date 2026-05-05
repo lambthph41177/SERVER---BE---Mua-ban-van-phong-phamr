@@ -44,8 +44,6 @@ export const getCommentsByProduct = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-
 /**
  * Xóa bình luận
  * Lưu ý: Chỉ Admin hoặc chính chủ mới được xóa
@@ -61,6 +59,7 @@ export const deleteComment = async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy bình luận" });
     }
 
+    
     // Kiểm tra quyền: Nếu không phải Admin/Manage VÀ không phải chủ nhân của comment
     if (
       user.role !== "admin" && 
