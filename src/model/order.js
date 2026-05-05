@@ -54,6 +54,7 @@ const orderSchema = new mongoose.Schema(
       },
     ],
 
+
     // --- Thanh toán và Tổng tiền ---
     totalPrice: {
       type: Number,
