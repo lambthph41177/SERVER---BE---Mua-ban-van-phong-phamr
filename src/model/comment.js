@@ -64,6 +64,7 @@ export const deleteComment = async (req, res) => {
     }
 
     
+    
     // Kiểm tra quyền: Nếu không phải Admin/Manage VÀ không phải chủ nhân của comment
     if (
       user.role !== "admin" && 
