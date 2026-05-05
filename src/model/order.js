@@ -37,7 +37,7 @@ const orderSchema = new mongoose.Schema(
       enum: ["customer_self_service", "manual_entry"],
       default: "customer_self_service",
     },
-
+    
     // --- Chi tiết sản phẩm trong đơn hàng ---
     products: [
       {
