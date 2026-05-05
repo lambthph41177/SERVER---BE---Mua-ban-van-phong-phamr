@@ -38,7 +38,7 @@ const orderSchema = new mongoose.Schema(
       default: "customer_self_service",
     },
     
-    
+
     // --- Chi tiết sản phẩm trong đơn hàng ---
     products: [
       {
@@ -56,6 +56,7 @@ const orderSchema = new mongoose.Schema(
     ],
 
 
+    
     // --- Thanh toán và Tổng tiền ---
     totalPrice: {
       type: Number,
