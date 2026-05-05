@@ -107,6 +107,7 @@ const orderSchema = new mongoose.Schema(
       set: (v) => (v === "" ? null : v),
     },
 
+  
     // --- Thông tin hóa đơn (Invoice) ---
     invoiceRequested: {
       type: Boolean,
