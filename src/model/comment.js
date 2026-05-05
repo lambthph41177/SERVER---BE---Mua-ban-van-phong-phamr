@@ -47,6 +47,7 @@ export const getCommentsByProduct = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 /**
  * Xóa bình luận
  * Lưu ý: Chỉ Admin hoặc chính chủ mới được xóa
