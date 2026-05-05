@@ -20,7 +20,7 @@ export const addComment = async (req, res) => {
       rating,
     });
 
-    
+
     // Populate thông tin user để trả về frontend hiển thị ngay
     const populatedComment = await newComment.populate("userId", "username avatar");
 
@@ -29,6 +29,7 @@ export const addComment = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 /**
  * Lấy danh sách bình luận của một sản phẩm
